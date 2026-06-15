@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { quizService } from "../services/quizService";
 
 const AuthContext = createContext();
 
@@ -18,6 +19,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user) {
+        quizService.ensureUserDoc(user.uid, user.email, user.displayName).catch(console.error);
+      }
       setLoading(false);
     });
     return unsubscribe;

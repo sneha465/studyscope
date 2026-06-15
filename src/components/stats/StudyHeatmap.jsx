@@ -1,6 +1,6 @@
 import React from "react";
 
-export function StudyHeatmap({ activity = {} }) {
+export function StudyHeatmap({ activity = {}, label = "sessions" }) {
   // Generate last 6 months of dates
   const today = new Date();
   const days = [];
@@ -22,10 +22,10 @@ export function StudyHeatmap({ activity = {} }) {
   });
 
   const getColor = (count) => {
-    if (!count) return "bg-slate-100";
-    if (count === 1) return "bg-brand-200 text-brand-700";
-    if (count === 2) return "bg-brand-400 text-white";
-    return "bg-brand-600 text-white";
+    if (!count) return "bg-slate-800";
+    if (count === 1) return "bg-purple-500/40";
+    if (count === 2) return "bg-purple-500/70";
+    return "bg-purple-500";
   };
 
   return (
@@ -43,7 +43,7 @@ export function StudyHeatmap({ activity = {} }) {
               return (
                 <div
                   key={day}
-                  title={`${day}: ${count} sessions`}
+                  title={`${day}: ${count} ${label}`}
                   className={`w-3.5 h-3.5 rounded-sm transition-colors ${getColor(count)}`}
                 />
               );
@@ -53,10 +53,10 @@ export function StudyHeatmap({ activity = {} }) {
       </div>
       <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 font-medium">
         <span>Less</span>
-        <div className="w-3 h-3 rounded-sm bg-slate-100" />
-        <div className="w-3 h-3 rounded-sm bg-brand-200" />
-        <div className="w-3 h-3 rounded-sm bg-brand-400" />
-        <div className="w-3 h-3 rounded-sm bg-brand-600" />
+        <div className="w-3 h-3 rounded-sm bg-slate-800" />
+        <div className="w-3 h-3 rounded-sm bg-purple-500/40" />
+        <div className="w-3 h-3 rounded-sm bg-purple-500/70" />
+        <div className="w-3 h-3 rounded-sm bg-purple-500" />
         <span>More</span>
       </div>
     </div>

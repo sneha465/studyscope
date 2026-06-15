@@ -31,7 +31,7 @@ export function AuthOverlay({ onClose }) {
       <Card className="w-full max-w-md shadow-2xl animate-slide-up">
         <CardHeader 
           title={isLogin ? "Welcome Back" : "Create Account"} 
-          subtitle={isLogin ? "Sign in to StudyScope to continue" : "Join StudyScope and start studying"}
+          subtitle={isLogin ? "Sign in to track your daily knowledge" : "Join StudyScope and start your quiz streak"}
         />
         
         <div className="space-y-4">
