@@ -167,15 +167,18 @@ export const quizService = {
     });
 
     const score = answers.filter((a) => a.isCorrect).length;
-    const percentage = Math.round((score / QUESTIONS_PER_QUIZ) * 100);
+    const percentage = Math.round(
+      (score / quiz.questions.length) * 100
+    );
 
     const attemptData = {
       userId,
       quizId: quiz.id,
+      type: quiz.type || "daily",
       date: quiz.date,
       topic: quiz.topic,
       score,
-      totalQuestions: QUESTIONS_PER_QUIZ,
+      totalQuestions: quiz.questions.length,
       percentage,
       answers,
       completedAt: serverTimestamp(),
@@ -188,6 +191,57 @@ export const quizService = {
     await quizService.updateKnowledgeScore(userId);
 
     return { id: attemptRef.id, ...attemptData, completedAt: Timestamp.now() };
+  },
+
+  submitPdfAttempt: async (userId, quiz, selectedAnswers) => {
+    const answers = quiz.questions.map((q) => {
+      const selected = selectedAnswers[q.id] || null;
+
+      return {
+        questionId: q.id,
+        question: q.question,
+        selected,
+        correct_answer: q.correct_answer,
+        isCorrect: selected === q.correct_answer,
+        explanation: q.explanation,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        options: q.options,
+      };
+    });
+
+    const score = answers.filter((a) => a.isCorrect).length;
+
+    const percentage = Math.round(
+      (score / quiz.questions.length) * 100
+    );
+
+    const attemptData = {
+      userId,
+      quizId: quiz.id,
+      type: "pdf",
+      date: quiz.date,
+      topic: quiz.topic,
+      score,
+      totalQuestions: quiz.questions.length,
+      percentage,
+      answers,
+      completedAt: serverTimestamp(),
+    };
+
+    const attemptRef = await addDoc(
+      collection(db, "quizAttempts"),
+      attemptData
+    );
+
+    await quizService.updateTopicMastery(userId, answers);
+    await quizService.updateKnowledgeScore(userId);
+
+    return {
+      id: attemptRef.id,
+      ...attemptData,
+      completedAt: Timestamp.now(),
+    };
   },
 
   updateStreak: async (userId) => {
@@ -357,7 +411,7 @@ export const quizService = {
         ? Math.round(weekAttempts.reduce((s, a) => s + a.percentage, 0) / weekAttempts.length)
         : 0;
 
-    const qualified = mastery.filter((m) => (m.totalCount || 0) >= 3);
+    const qualified = mastery.filter((m) => (m.totalCount || 0) >= 1);
     const strongTopics = [...qualified].sort((a, b) => b.accuracy - a.accuracy).slice(0, 3);
     const weakTopics = [...qualified].sort((a, b) => a.accuracy - b.accuracy).slice(0, 3);
 
@@ -385,7 +439,7 @@ export const quizService = {
       knowledgeScore: profile?.knowledgeScore || 0,
       streak: profile?.streak || 0,
       weeklyAccuracy,
-      quizzesCompleted: profile?.totalQuizzesCompleted || attempts.length,
+      quizzesCompleted: attempts.length,
       activity: profile?.activity || {},
       strongTopics,
       weakTopics,

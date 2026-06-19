@@ -65,9 +65,21 @@ export function QuizHistory() {
                 <Card className="p-5 bg-slate-900 border-slate-800 hover:border-purple-500/30 hover:bg-slate-800/50 transition-all">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-grow min-w-0">
-                      <h3 className="font-bold text-white truncate group-hover:text-purple-300 transition-colors">
-                        {attempt.topic}
-                      </h3>
+                    <div className="flex items-center gap-2">
+  <span
+    className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded ${
+      attempt.type === "pdf"
+        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+        : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+    }`}
+  >
+    {attempt.type === "pdf" ? "PDF" : "Daily"}
+  </span>
+
+  <h3 className="font-bold text-white truncate group-hover:text-purple-300 transition-colors">
+    {attempt.topic}
+  </h3>
+</div>
                       <div className="flex items-center gap-4 mt-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
                         <span className="flex items-center gap-1.5">
                           <Calendar className="w-3 h-3" />
