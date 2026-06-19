@@ -21,14 +21,15 @@ import {
   LogOut,
   Menu,
   X,
+  FileText,
 } from "lucide-react";
 import { Button } from "./components/ui/Button";
-
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { DailyQuiz } from "./pages/DailyQuiz";
 import { QuizHistory } from "./pages/QuizHistory";
 import { QuizReview } from "./pages/QuizReview";
 import { TopicMastery } from "./pages/TopicMastery";
+import { PDFQuizGenerator } from "./pages/PDFQuizGenerator";
 import { Settings } from "./pages/Settings";
 
 function AppContent() {
@@ -54,6 +55,7 @@ function AppContent() {
   const navItems = [
     { path: "/", id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/quiz", id: "quiz", label: "Daily Quiz", icon: Sparkles },
+    {path: "/quiz-generator", id: "pdfquiz", label: "PDF Quiz", icon: FileText },
     { path: "/history", id: "history", label: "Quiz History", icon: HistoryIcon },
     { path: "/topics", id: "topics", label: "Topic Mastery", icon: Brain },
     { path: "/settings", id: "settings", label: "Settings", icon: SettingsIcon },
@@ -177,6 +179,7 @@ function AppContent() {
                 <Route path="/history" element={<QuizHistory />} />
                 <Route path="/history/:id" element={<QuizReview />} />
                 <Route path="/topics" element={<TopicMastery />} />
+                <Route path="/quiz-generator" element={<PDFQuizGenerator />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
