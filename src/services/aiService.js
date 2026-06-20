@@ -1,5 +1,6 @@
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 const DEFAULT_TOPICS = [
   "General Knowledge",
@@ -18,61 +19,43 @@ async function callOpenRouter(prompt, maxTokens = 3000) {
     );
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      max_tokens: maxTokens,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert quiz creator. Return ONLY valid JSON. Do not wrap JSON in markdown.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-
-    throw new Error(
-      errorData.error?.message ||
-      JSON.stringify(errorData) ||
-      "AI service error"
-    );
-  }
-
-  const data = await response.json();
-
-  let content = data.choices?.[0]?.message?.content || "";
-
-  content = content
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
-
 
 
   try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+
+    const result = await model.generateContent(prompt);
+
+    let content = result.response.text();
+
+    content = content
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    console.log("RAW AI RESPONSE:");
+    console.log(content);
+
     return JSON.parse(content);
   } catch (error) {
-    console.error("RAW AI RESPONSE:");
-    console.log(content);
+    console.error("FAILED JSON:");
+    console.log(error);
 
     throw new Error(
       "AI returned invalid JSON. Please try generating again."
     );
   }
 }
+
+
+
+
+
+
+
+
 
 function chunkText(text, chunkSize = 3000) {
   const chunks = [];
