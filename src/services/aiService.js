@@ -182,7 +182,7 @@ Return ONLY valid JSON:
       );
     }
 
-    const chunks = chunkText(pdfText, 3000);
+    const chunks = chunkText(pdfText, 1500);
 
     const selectedChunks = selectChunksEvenly(
       chunks,
@@ -243,7 +243,7 @@ Return ONLY valid JSON:
       try {
         const parsed = await callOpenRouter(
           prompt,
-          600
+          250
         );
 
         if (parsed.questions) {

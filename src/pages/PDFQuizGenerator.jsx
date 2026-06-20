@@ -81,7 +81,7 @@ export function PDFQuizGenerator() {
         id: `pdf-${Date.now()}`,
         type: "pdf",
         date: new Date().toISOString().split("T")[0],
-        topic: generatedQuiz.topic,
+        topic: file.name.replace(/\.pdf$/i, ""),
         questions: generatedQuiz.questions,
       });
 
