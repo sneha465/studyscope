@@ -137,12 +137,16 @@ export const quizService = {
       collection(db, "quizAttempts"),
       where("userId", "==", userId),
       where("date", "==", today),
+      where("type", "==", "daily"),
       limit(1)
     );
     const snap = await getDocs(q);
     if (snap.empty) return null;
     const d = snap.docs[0];
-    return { id: d.id, ...d.data() };
+    return {
+      id: d.id,
+      ...d.data(),
+    };
   },
 
   submitAttempt: async (userId, quiz, selectedAnswers) => {
@@ -220,7 +224,7 @@ export const quizService = {
       userId,
       quizId: quiz.id,
       type: "pdf",
-      date: quiz.date,
+      date: toISODate(),
       topic: quiz.topic,
       score,
       totalQuestions: quiz.questions.length,
