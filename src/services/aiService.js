@@ -1,5 +1,6 @@
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 const DEFAULT_TOPICS = [
   "General Knowledge",
@@ -18,51 +19,71 @@ async function callOpenRouter(prompt, maxTokens = 3000) {
     );
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      max_tokens: maxTokens,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert quiz creator. Return ONLY valid JSON. Do not wrap JSON in markdown.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    }),
-  });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+
+    const result = await model.generateContent(prompt);
+
+    let content = result.response.text();
+
+    content = content
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    console.log("RAW AI RESPONSE:");
+    console.log(content);
+
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("FAILED JSON:");
+    console.log(error);
 
     throw new Error(
-      errorData.error?.message ||
-      JSON.stringify(errorData) ||
-      "AI service error"
+      "AI returned invalid JSON. Please try generating again."
     );
   }
-
-  const data = await response.json();
-
-  let content = data.choices?.[0]?.message?.content || "";
-
-  content = content
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+}
 
 
 
-  return JSON.parse(content);
+
+
+
+
+
+
+function chunkText(text, chunkSize = 3000) {
+  const chunks = [];
+
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+
+  return chunks;
+}
+
+function selectChunksEvenly(chunks, count) {
+  if (chunks.length <= count) {
+    return chunks;
+  }
+
+  const selected = [];
+
+  for (let i = 0; i < count; i++) {
+    const index = Math.round(
+      (i * (chunks.length - 1)) /
+      (count - 1)
+    );
+
+    selected.push(chunks[index]);
+  }
+
+  return selected;
 }
 
 export const aiService = {
@@ -137,12 +158,40 @@ Return ONLY valid JSON:
     questionCount = 10,
     difficulty = "Mixed"
   ) => {
-    const trimmedText = pdfText.slice(0, 12000);
 
-    const prompt = `
-You are creating a quiz from study material.
+    if (!pdfText || pdfText.trim().length < 200) {
+      throw new Error(
+        "Couldn't extract enough text from this PDF."
+      );
+    }
 
-Generate EXACTLY ${questionCount} multiple choice questions.
+    const chunks = chunkText(pdfText, 1500);
+
+    const selectedChunks = selectChunksEvenly(
+      chunks,
+      Math.min(chunks.length, questionCount)
+    );
+
+    const baseQuestions = Math.floor(
+      questionCount / selectedChunks.length
+    );
+
+    let extraQuestions =
+      questionCount % selectedChunks.length;
+
+    let allQuestions = [];
+    for (const chunk of selectedChunks) {
+
+      const questionsForChunk =
+        baseQuestions +
+        (extraQuestions > 0 ? 1 : 0);
+
+      if (extraQuestions > 0) {
+        extraQuestions--;
+      }
+
+      const prompt = `
+Generate EXACTLY ${questionsForChunk} multiple choice questions.
 
 Difficulty: ${difficulty}
 
@@ -150,18 +199,17 @@ RULES:
 - Use ONLY information from the provided material.
 - Each question must have exactly 4 options.
 - correct_answer must exactly match one option.
-- explanation must be 1-3 sentences.
+- explanation must be 1-2 sentences.
 - topic should be a short subtopic.
 - difficulty should be Beginner, Intermediate, or Advanced.
 
 Study Material:
 
-${trimmedText}
+${chunk}
 
 Return ONLY valid JSON:
 
 {
-  "topic": "PDF Quiz",
   "questions": [
     {
       "question": "",
@@ -175,22 +223,50 @@ Return ONLY valid JSON:
 }
 `;
 
-    const parsed = await callOpenRouter(prompt, 4000);
+      try {
+        const parsed = await callOpenRouter(
+          prompt,
+          250
+        );
 
-    if (!parsed.questions) {
-      throw new Error("No questions returned.");
+        if (parsed.questions) {
+          allQuestions.push(...parsed.questions);
+        }
+
+      } catch (error) {
+        console.error("Chunk failed:", error);
+      }
+    }
+    allQuestions = allQuestions
+      .sort(() => Math.random() - 0.5)
+      .slice(0, questionCount);
+
+    const validQuestions = allQuestions.filter(
+      (q) =>
+        q.question &&
+        Array.isArray(q.options) &&
+        q.options.length === 4 &&
+        q.correct_answer &&
+        q.explanation
+    );
+
+    if (validQuestions.length < questionCount) {
+      throw new Error(
+        `Only generated ${validQuestions.length}/${questionCount} valid questions. Try again.`
+      );
     }
 
-    parsed.questions = parsed.questions.map((q, i) => ({
-      id: `pdf_q${i}`,
-      question: q.question,
-      options: q.options?.slice(0, 4) || [],
-      correct_answer: q.correct_answer,
-      explanation: q.explanation,
-      topic: q.topic || "PDF Quiz",
-      difficulty: q.difficulty || "Intermediate",
-    }));
-
-    return parsed;
+    return {
+      topic: "PDF Quiz",
+      questions: validQuestions.map((q, i) => ({
+        id: `pdf_q${i}`,
+        question: q.question,
+        options: q.options.slice(0, 4),
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
+        topic: q.topic || "PDF Quiz",
+        difficulty: q.difficulty || "Intermediate",
+      })),
+    };
   },
 };
