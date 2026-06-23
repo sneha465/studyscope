@@ -35,13 +35,11 @@ async function callOpenRouter(prompt, maxTokens = 3000) {
       .replace(/```/g, "")
       .trim();
 
-    console.log("RAW AI RESPONSE:");
-    console.log(content);
+
 
     return JSON.parse(content);
   } catch (error) {
-    console.error("FAILED JSON:");
-    console.log(error);
+    console.error(error);
 
     throw new Error(
       "AI returned invalid JSON. Please try generating again."
@@ -108,6 +106,14 @@ REQUIREMENTS:
    - 4 Intermediate
    - 3 Advanced
 
+IMPORTANT:
+Return ONLY valid JSON.
+Do not include notes.
+Do not include explanations outside JSON.
+Do not revise your answers.
+Do not output markdown.
+Do not output partial JSON.
+
 Return ONLY valid JSON:
 
 {
@@ -169,7 +175,7 @@ Return ONLY valid JSON:
 
     const selectedChunks = selectChunksEvenly(
       chunks,
-      Math.min(chunks.length, questionCount)
+      Math.min(chunks.length, 5)
     );
 
     const baseQuestions = Math.floor(
@@ -252,7 +258,7 @@ Return ONLY valid JSON:
 
     if (validQuestions.length < questionCount) {
       throw new Error(
-        `Only generated ${validQuestions.length}/${questionCount} valid questions. Try again.`
+        "Failed to generate enough questions. Please try again."
       );
     }
 
